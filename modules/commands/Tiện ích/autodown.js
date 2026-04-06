@@ -1,88 +1,215 @@
-const axios = require("axios"),
-    fs = require("fs-extra"),
-    path = require("path"),
-    autodownConfig = {
-        name: "autodown",
-        version: "1.0.2",
-        hasPermssion: 0,
-        credits: "gaudev",
-        description: "Bật/tắt tự động tải video/ảnh từ nhiều nền tảng",
-        commandCategory: "Tiện ích",
-        usages: "[link] hoặc bật/tắt autodown",
-        cooldowns: 5,
-        dependencies: { axios: "", "fs-extra": "" }
-    },
-    cacheDirectory = (() => {
-        const dir = path.join(__dirname, "cache");
-        fs.existsSync(dir) || fs.mkdirSync(dir);
-        return dir;
-    })(),
-    stateFile = path.join(cacheDirectory, "autodown_state.json"),
-    persistState = obj => fs.writeFileSync(stateFile, JSON.stringify(obj, null, 4)),
-    retrieveState = () => (fs.existsSync(stateFile) || persistState({}), JSON.parse(fs.readFileSync(stateFile)));
+const axios = require("axios");
+const fs = require("fs-extra");
+const path = require("path");
 
-module.exports.config = autodownConfig;
+// Đường dẫn lưu cache và trạng thái
+const cacheDir = path.join(__dirname, "cache");
+const settingsPath = path.join(cacheDir, "autodown_settings.json");
 
-module.exports.run = async function ({ api, event }) {
-    const { threadID } = event, currentState = retrieveState();
-    (!currentState[threadID]) && (currentState[threadID] = { enabled: true });
-    currentState[threadID].enabled = !currentState[threadID].enabled;
-    persistState(currentState);
-    return api.sendMessage(`Đã ${(currentState[threadID].enabled ? "Bật" : "Tắt")} tự động tải link ✅`, threadID);
+// Kiểm tra thư mục cache, nếu chưa có thì tạo mới
+if (!fs.existsSync(cacheDir)) {
+    fs.mkdirSync(cacheDir);
+}
+
+// Trạng thái mặc định cho các dịch vụ
+let settings = {
+    isTikTokEnabled: true,
+    isSoundCloudEnabled: true,
+    isDouyinEnabled: true,
+    isFacebookEnabled: true,
+    isYouTubeEnabled: true,
+    isDownAIOEnabled: true,
 };
 
-module.exports.handleEvent = async function ({ api, event }) {
-    const { threadID, messageID, body } = event;
-    const currentState = retrieveState();
-    currentState[threadID] = currentState[threadID] || { enabled: true };
-    if (!currentState[threadID].enabled || !body) return;
+// Tải trạng thái từ file hoặc tạo file mới với trạng thái mặc định
+if (fs.existsSync(settingsPath)) {
+    settings = JSON.parse(fs.readFileSync(settingsPath, "utf-8"));
+} else {
+    fs.writeFileSync(settingsPath, JSON.stringify(settings, null, 2));
+}
 
-    const urlPattern = /(https?:\/\/[^\s]+)/g, detectedURLs = body.match(urlPattern);
+// Hàm lưu trạng thái vào file
+function saveSettings() {
+    fs.writeFileSync(settingsPath, JSON.stringify(settings, null, 2));
+}
 
-    if (!detectedURLs) return;
+// Hàm tải file từ URL
+async function streamURL(url, type) {
+    const res = await axios.get(url, {
+        responseType: "arraybuffer"
+    });
+    const filePath = `${cacheDir}/${Date.now()}.${type}`;
+    fs.writeFileSync(filePath, res.data);
+    return fs.createReadStream(filePath);
+}
 
-    const firstURL = detectedURLs[0].replace(/[^a-zA-Z0-9:\\/\\.\\-_?&=]/g, ""),
-        supportedDomains = ["youtube.com", "yt.be", "youtu.be", "facebook.com", "instagram.com", "threads.net", "v.douyin.com", "tiktok.com", "vt.tiktok.com", "www.tiktok.com", "capcut.com"];
-    if (!supportedDomains.some(domain => firstURL.includes(domain))) return;
-	console.log(`[AUTODOWN] Đã phát hiện liên kết: `, firstURL)
-    const fetchMedia = async (url, mediaType, fileExtension) => {
-        const filePath = path.join(cacheDirectory, `${mediaType}_${Date.now()}.${fileExtension}`);
-        const fileData = await axios.get(url, { responseType: "arraybuffer" });
-        return fs.writeFileSync(filePath, Buffer.from(fileData.data, "binary")), fs.createReadStream(filePath);
-    };
+// Hàm lấy thông tin từ TikTok
+async function infoPostTT(url) {
+    const res = await axios.post("https://tikwm.com/api/", {
+        url
+    }, {
+        headers: {
+            "content-type": "application/json"
+        }
+    });
+    return res.data.data;
+}
 
+// Hàm kiểm tra link Douyin
+function isDouyinVideoLink(link) {
+    return /douyin\.com/.test(link);
+}
+
+// Xử lý sự kiện chính
+exports.handleEvent = async function(o) {
     try {
-        const headers = { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)', 'Accept-Language': 'vi-VN, en-US' },
-            isThreadPlatform = firstURL.includes("threads.net"),
-            apiURL = `http://gau-api.click/download?url=${encodeURIComponent(firstURL)}`;
-        const { data: { data } } = isThreadPlatform ? await axios.get(apiURL, { headers }) : await axios.get(apiURL);
+        const str = (o.event && typeof o.event.body === 'string') ? o.event.body.trim() : "";
+        if (!str) return;
 
-        if (!data || !data.media_urls?.length && !data.medias?.length) return;
+        const send = (msg) => o.api.sendMessage(msg, o.event.threadID, o.event.messageID);
+        const links = str.match(/(https?:\/\/[^)\s]+)/g) || [];
 
-        const mediaList = data.media_urls || data.medias, imageAttachments = [], videoAttachments = [];
-        let videoCount = 0;  // Thêm biến đếm video
+        // Xử lý lệnh bật/tắt nhanh
+        if (str.startsWith("autodown")) {
+            const args = str.split(" ");
+            switch (args[1]) {
+                case "-s":
+                    settings.isSoundCloudEnabled = !settings.isSoundCloudEnabled;
+                    saveSettings();
+                    return send(`SoundCloud đã được ${settings.isSoundCloudEnabled ? "✅ BẬT" : "❌ TẮT"}`);
+                case "-t":
+                    settings.isTikTokEnabled = !settings.isTikTokEnabled;
+                    saveSettings();
+                    return send(`TikTok đã được ${settings.isTikTokEnabled ? "✅ BẬT" : "❌ TẮT"}`);
+                case "-d":
+                    settings.isDouyinEnabled = !settings.isDouyinEnabled;
+                    saveSettings();
+                    return send(`Douyin đã được ${settings.isDouyinEnabled ? "✅ BẬT" : "❌ TẮT"}`);
+                case "-f":
+                    settings.isFacebookEnabled = !settings.isFacebookEnabled;
+                    saveSettings();
+                    return send(`Facebook đã được ${settings.isFacebookEnabled ? "✅ BẬT" : "❌ TẮT"}`);
+                case "-aio":
+                    settings.isDownAIOEnabled = !settings.isDownAIOEnabled;
+                    saveSettings();
+                    return send(`DownAIO đã được ${settings.isDownAIOEnabled ? "✅ BẬT" : "❌ TẮT"}`);
+                case "-y":
+                    settings.isYouTubeEnabled = !settings.isYouTubeEnabled;
+                    saveSettings();
+                    return send(`YouTube đã được ${settings.isYouTubeEnabled ? "✅ BẬT" : "❌ TẮT"}`);
+                case "-all":
+                    const newState = !settings.isTikTokEnabled;
+                    settings.isTikTokEnabled =
+                        settings.isSoundCloudEnabled =
+                        settings.isDouyinEnabled =
+                        settings.isFacebookEnabled =
+                        settings.isYouTubeEnabled =
+                        settings.isDownAIOEnabled = newState;
+                    saveSettings();
+                    return send(`Tất cả các dịch vụ đã được ${newState ? "✅ BẬT" : "❌ TẮT"}`);
+                default:
+                    return send(`[ MENU TỰ ĐỘNG TẢI ]
+1. TikTok: ${settings.isTikTokEnabled ? "✅ BẬT" : "❌ TẮT"}
+2. SoundCloud: ${settings.isSoundCloudEnabled ? "✅ BẬT" : "❌ TẮT"}
+3. Douyin: ${settings.isDouyinEnabled ? "✅ BẬT" : "❌ TẮT"}
+4. Facebook: ${settings.isFacebookEnabled ? "✅ BẬT" : "❌ TẮT"}
+5. YouTube: ${settings.isYouTubeEnabled ? "✅ BẬT" : "❌ TẮT"}
+6. DownAIO: ${settings.isDownAIOEnabled ? "✅ BẬT" : "❌ TẮT"}
 
-        for (const media of mediaList) {
-            const { type, url } = media;
-            if (type === "image") {
-                imageAttachments.push(await fetchMedia(url, "image", "jpg"));
-            } else if (type === "video" && videoCount < 1) {  // Chỉ tải 1 video
-                videoAttachments.push(await fetchMedia(url, "video", "mp4"));
-                videoCount++;
+Cách Dùng:
+- Công thức: "autodown -chữ thường đầu"
+- Ví dụ: "autodown -t" để bật/tắt TikTok
+- "autodown -aio" để bật/tắt DownAIO ( Tải Đa Nền Tảng )
+- "autodown -all" để bật/tắt toàn bộ tự động tải.`);
             }
         }
-		console.log(`[AUTODOWN] Đã tải xuống liên kết: `, firstURL)
-		console.log(`[AUTODOWN] Bất đầu gửi file..`)
-        if (imageAttachments.length) {
-            const imageMessage = `[${(data.source || "Threads").toUpperCase()}] - Tự Động Tải Ảnh\n\n👤 Tác giả: ${data.author || "Không rõ"}\n💬 Tiêu đề: ${data.title || "Không có tiêu đề"}`;
-            await api.sendMessage({ body: imageMessage, attachment: imageAttachments }, threadID, messageID); // Thêm messageID
-        }
 
-        if (videoAttachments.length) {
-            const videoMessage = `[${(data.source || "Threads").toUpperCase()}] - Tự Động Tải Video\n\n👤 Tác giả: ${data.author || "Không rõ"}\n💬 Tiêu đề: ${data.title || "Không có tiêu đề"}`;
-            await api.sendMessage({ body: videoMessage, attachment: videoAttachments[0] }, threadID, messageID); // Thêm messageID
+        // Xử lý tự động tải link
+        for (const link of links) {
+            if (/soundcloud/.test(link) && settings.isSoundCloudEnabled) {
+                try {
+                    const res = await axios.get(`https://nguyenmanh.name.vn/api/scDL?url=${link}&apikey=jn6PoPho`);
+                    const {
+                        title,
+                        duration,
+                        audio
+                    } = res.data.result;
+                    const audioPath = await streamURL(audio, "mp3");
+                    send({
+                        body: `[ SOUNDCLOUD ]\n📝 Tiêu Đề: ${title}\n⏰ Thời Gian: ${duration}`,
+                        attachment: audioPath,
+                    });
+                } catch {
+                    send("Đã xảy ra lỗi khi tải nội dung từ SoundCloud.");
+                }
+            }
+
+            if (/(^https:\/\/)((vm|vt|www|v)\.)?(tiktok)\.com\//.test(link) && settings.isTikTokEnabled) {
+                try {
+                    const json = await infoPostTT(link);
+                    const attachment = json.images ?
+                        await Promise.all(json.images.map((img) => streamURL(img, "png"))) :
+                        await streamURL(json.play, "mp4");
+                    send({
+                        body: `[ TIKTOK ]\n👤 Tên Kênh: ${json.author.nickname}\n📝 Tiêu Đề: ${json.title}`,
+                        attachment,
+                    });
+                } catch {
+                    send("Đã xảy ra lỗi khi tải nội dung từ TikTok.");
+                }
+            }
+
+            if (settings.isDouyinEnabled && isDouyinVideoLink(link)) {
+                try {
+                    const res = await axios.get(`https://subhatde.id.vn/tiktok/douyindl?url=${link}`);
+                    const videoData = res.data;
+                    if (videoData.attachments?.length) {
+                        const videoStream = await streamURL(videoData.attachments[0].url, "mp4");
+                        send({
+                            body: `[ DOUYIN ]\n📝 Tiêu Đề: ${videoData.caption || "N/A"}`,
+                            attachment: videoStream,
+                        });
+                    }
+                } catch {
+                    send("Đã xảy ra lỗi khi tải nội dung từ Douyin.");
+                }
+            }
+
+            if (/fb|facebook/.test(link) && settings.isFacebookEnabled) {
+                try {
+                    const res = await axios.get(`https://private.azig.dev/media/downAIO?url=${encodeURIComponent(link)}&apikey=i0qCPytSXf`);
+                    const {
+                        title,
+                        medias
+                    } = res.data.data;
+                    if (medias?.length) {
+                        const attachments = await Promise.all(
+                            medias.map((media) => streamURL(media.url, media.type === "video" ? "mp4" : media.extension))
+                        );
+                        send({
+                            body: `[ FACEBOOK ]\n📝 Tiêu Đề: ${title || "N/A"}`,
+                            attachment: attachments,
+                        });
+                    }
+                } catch {
+                    send("Đã xảy ra lỗi khi tải nội dung từ Facebook.");
+                }
+            }
         }
-    } catch (err) {
-        console.error("", err);
+    } catch (error) {
+        console.error(error);
     }
+};
+
+exports.run = () => {};
+
+exports.config = {
+    name: "autodown",
+    version: "3.1.0",
+    hasPermssion: 0,
+    credits: "ChatGPT",
+    description: "Tự động tải link (TikTok, SoundCloud, Douyin & Facebook)",
+    commandCategory: "Tiện ích",
+    usages: ["autodown"],
+    cooldowns: 3,
 };
