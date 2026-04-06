@@ -107,6 +107,7 @@ module.exports = async function ({ api }) {
     let results = null;
 
     setInterval(async () => {
+        if (!fs.existsSync(fileCheck)) return;
         const checkData = JSON.parse(fs.readFileSync(fileCheck, "utf-8"));
         if (checkData.length == 0) return;
         const phiênData = JSON.parse(fs.readFileSync(phiênFile, "utf-8"));

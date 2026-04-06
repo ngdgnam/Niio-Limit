@@ -23,31 +23,6 @@ module.exports = function ({ api, models, Users, Threads, Currencies }) {
 
         if (!prefixRegex.test(body)) return;
 
-        let form_mm_dd_yyyy = (input = '', split = input.split('/')) => `${split[1]}/${split[0]}/${split[2]}`;
-        if (event.senderID != api.getCurrentUserID() && !ADMINBOT.includes(senderID)) {
-            let thuebot;
-            try { thuebot = JSON.parse(require('fs-extra').readFileSync(process.cwd() + '/modules/data/thuebot.json')); } catch { thuebot = []; };
-            let find_thuebot = thuebot.find($ => $.t_id == threadID);
-            if ((prefixTO[threadID] + 'bank') != event.body[0]) {
-                if (!find_thuebot) return api.sendMessage(`❎ Nhóm của bạn chưa thuê bot, vui lòng reply tin nhắn này và nhập key thuê bot hoặc liên hệ Admin để lấy key thuê bot\nfb: ${(!global.config.FACEBOOK_ADMIN) ? "Exclude Admin if not configured!" : global.config.FACEBOOK_ADMIN}`, event.threadID, (e, i) => {
-                    global.client.handleReply.push({
-                        name: 'rent',
-                        messageID: i.messageID,
-                        threadID: event.threadID,
-                        type: 'RentKey'
-                    });
-                });
-                if (new Date(form_mm_dd_yyyy(find_thuebot.time_end)).getTime() <= Date.now() + 25200000) return api.sendMessage(`⚠️ Thời hạn sử dụng bot của nhóm bạn đã hết. Vui lòng reply tin nhắn này và nhập mã key mới, hoặc liên hệ Admin để được hỗ trợ.\nfb: ${(!global.config.FACEBOOK_ADMIN) ? "Exclude Admin if not configured!" : global.config.FACEBOOK_ADMIN}`, event.threadID, (e, i) => {
-                    global.client.handleReply.push({
-                        name: 'rent',
-                        messageID: i.messageID,
-                        threadID: event.threadID,
-                        type: 'RentKey'
-                    });
-                });
-            };
-        };
-
         const dateNow = Date.now()
         if (!ADMINBOT.includes(senderID) && MAINTENANCE) {
             return api.sendMessage('⚠️ Bot đang được bảo trì, vui lòng sử dụng sau', threadID, messageID);
@@ -113,8 +88,7 @@ module.exports = function ({ api, models, Users, Threads, Currencies }) {
                 command = client.commands.get(checker.bestMatch.target);
             } else {
                 return api.sendMessage({
-				body: `👤 ${name} !\n🔎 Lệnh không tồn tại!\n📌 lệnh gần giống là " ${checker.bestMatch.target} "\n📝 Thính: ${randomThinh}\n────────────────────\n⏳ Uptime: ${h}:${p}:${s}\n⏱ ${thu} || ${gio}`,
-					attachment: global.anime.splice(0, 1)
+				body: `👤 ${name} !\n🔎 Lệnh không tồn tại!\n📌 lệnh gần giống là " ${checker.bestMatch.target} "\n📝 Thính: ${randomThinh}\n────────────────────\n⏳ Uptime: ${h}:${p}:${s}\n⏱ ${thu} || ${gio}`
                 }, event.threadID, async (err, info) => {
 					await new Promise(resolve => setTimeout(resolve, 60 * 1000));
 					return api.unsendMessage(info.messageID);

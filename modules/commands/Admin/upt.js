@@ -38,11 +38,12 @@ module.exports = {
 
         // Hàm tối ưu RAM
         function optimizeRAM() {
-            return new Promise((resolve, reject) => {
+            return new Promise((resolve) => {
                 exec('sync && echo 3 > /proc/sys/vm/drop_caches', (error, stdout, stderr) => {
                     if (error) {
-                        console.error('❎ Không thể giải phóng RAM:', error.message);
-                        return reject(error);
+                        // Ignore permission errors, just resolve anyway
+                        console.log('⚠️  Không có quyền giải phóng RAM tự động (cần root), tiếp tục...');
+                        return resolve('');
                     }
                     resolve(stdout || stderr);
                 });
@@ -109,7 +110,7 @@ module.exports = {
 👤 Yêu cầu bởi: ${name}
 `.trim();//${ramBefore.usedMem}MB/${ramBefore.totalMem}MB (trước tối ưu)
 
-            api.sendMessage({ body: replyMsg, attachment: global.girl.splice(0, 1) }, event.threadID, event.messageID);
+            api.sendMessage({ body: replyMsg, attachment: (global.girl && Array.isArray(global.girl) ? global.girl.splice(0, 1) : []) }, event.threadID, event.messageID);
 
         } catch (error) {
             console.error('❎ Error getting disk information:', error.message);

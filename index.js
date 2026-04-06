@@ -1,6 +1,5 @@
 const { spawn } = require("child_process");
 const log = require("./utils/log");
-require('./includes/chess/covua');
 
 const startBot = () => {
     log('🌸 ĐANG KHỞI ĐỘNG BOT', "⟦ KÍCH HOẠT ⟧⪼ ");

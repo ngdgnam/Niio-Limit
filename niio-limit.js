@@ -191,14 +191,19 @@ function onBot({ models }) {
 
             const logMemoryUsage = () => {
                 const { rss, /*heapTotal, heapUsed, external */ } = process.memoryUsage();
-                logger(`🔹 RAM đang sử dụng (RSS): ${formatMemory(rss)} MB`, "[ Giám sát ]");
+                const now = new Date();
+                const timeStr = now.toLocaleTimeString('vi-VN') + ' ' + now.toLocaleDateString('vi-VN');
+                console.log(`========= WolfBot Console Log ==============
+├─ Nhóm: Unknown
+├─ User: Người dùng facebook
+├─ Nội dung: RAM đang sử dụng (RSS): ${formatMemory(rss)} MB
+├─ Time: ${timeStr}
+============================================`);
                 if (rss > 800 * 1024 * 1024) {
                     logger('⚠️ Phát hiện rò rỉ bộ nhớ, khởi động lại ứng dụng...', "[ Giám sát ]");
                     process.exit(1);
                 }
             };
-
-            setInterval(logMemoryUsage, 10000);
 
             fs.writeFileSync(appPath, JSON.stringify(api.getAppState(), null, "\t"));
             initializeBot(api, models);

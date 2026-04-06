@@ -569,9 +569,9 @@ module.exports.events = async function ({ api, event, args, Threads, Users }) {
                     case 's':
                         return api.sendMessage(msg.body, threadID, event.messageID);
                     case 'rd_girl':
-                        return send(global.girl.splice(0, 1));
+                        return send(global.girl && Array.isArray(global.girl) ? global.girl.splice(0, 1) : []);
                     case 'anime':
-                        return send(global.anime.splice(0, 1));
+                        return send(global.anime && Array.isArray(global.anime) ? global.anime.splice(0, 1) : []);
                     default:
                         const file = __dirname + `/cache/${event.senderID}.${shortcut.file}`;
                         const sendMsg = () => api.sendMessage({ body: msg.body, attachment: fs.createReadStream(file) }, threadID, () => fs.unlinkSync(file), event.messageID);
@@ -881,8 +881,8 @@ module.exports.handleEvent = async function ({ api, event, Threads, Users }) {
         msg = msg.replace(/\{name\}/g, name).replace(/\{time\}/g, time);
         if (url) {
             if (url == 's') api.sendMessage(msg, event.threadID, event.messageID);
-            else if (url === 'rd_girl') api.sendMessage({ body: msg, attachment: global.girl.splice(0, 1) }, event.threadID, event.messageID);
-            else if (url === 'anime') api.sendMessage({ body: msg, attachment: global.anime.splice(0, 1) }, event.threadID, event.messageID);
+            else if (url === 'rd_girl') api.sendMessage({ body: msg, attachment: (global.girl && Array.isArray(global.girl) ? global.girl.splice(0, 1) : []) }, event.threadID, event.messageID);
+            else if (url === 'anime') api.sendMessage({ body: msg, attachment: (global.anime && Array.isArray(global.anime) ? global.anime.splice(0, 1) : []) }, event.threadID, event.messageID);
             else {
                 let file = tagItem ? tagItem.file : (inputItem ? inputItem.file : '');
                 const cacheFilePath = __dirname + `/cache/${event.senderID}.${file}`

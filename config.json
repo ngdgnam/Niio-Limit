@@ -3,18 +3,17 @@
     "notiGroup": true,
     "MAINTENANCE": false,
     "allowInbox": false,
-    "BOTNAME": " 💢 ",
-    "AMDIN_NAME": "Lương Trường Khôi",
-    "keyRent": "Lunar",
+    "BOTNAME": "Nnam",
+    "AMDIN_NAME": "Nguyễn Đăng Nam",
     "FACEBOOK_ADMIN": "",
     "PREFIX": ".",
     "box_admin": "",
     "ADMINBOT": [
-        "",
+        "100085850988039",
         ""
     ],
     "NDH": [
-        "",
+        "100085850988039",
         ""
     ],
     "autoCleanCache": {
@@ -24,7 +23,6 @@
             "./modules/commands/Thống kê/cache",
             "./modules/commands/Admin/cache",
             "./modules/commands/Coin/cache",
-            "./modules/commands/Game/cache",
             "./modules/commands/Nhóm/cache"
         ],
         "AllowFileExtension": [

@@ -15,44 +15,6 @@ module.exports = function ({ api, models, Users, Threads, Currencies }) {
 
         if (!notCMD || senderID === api.getCurrentUserID()) return;
 
-        let form_mm_dd_yyyy = (input = '', split = input.split('/')) => `${split[1]}/${split[0]}/${split[2]}`;
-
-        if (event.senderID != api.getCurrentUserID() && !ADMINBOT.includes(senderID)) {
-            let thuebot;
-            try {
-                thuebot = JSON.parse(require('fs-extra').readFileSync(process.cwd() + '/modules/data/thuebot.json'));
-            } catch {
-                thuebot = [];
-            }
-
-            let find_thuebot = thuebot.find($ => $.t_id == threadID);
-
-            // Kiểm tra nếu nhóm chưa thuê bot
-            if (!find_thuebot) {
-                return api.sendMessage(`❎ Nhóm của bạn chưa thuê bot, vui lòng reply tin nhắn này và nhập key thuê bot hoặc liên hệ Admin để lấy key thuê bot\nfb: ${(!global.config.FACEBOOK_ADMIN) ? "Exclude Admin if not configured!" : global.config.FACEBOOK_ADMIN}`, event.threadID, (e, i) => {
-                    global.client.handleReply.push({
-                        name: 'rent',
-                        messageID: i.messageID,
-                        threadID: event.threadID,
-                        type: 'RentKey'
-                    });
-                });
-            }
-
-            // Kiểm tra thời gian thuê bot đã hết hạn chưa
-            if (new Date(form_mm_dd_yyyy(find_thuebot.time_end)).getTime() <= Date.now() + 25200000) {
-                return api.sendMessage(`⚠️ Thời hạn sử dụng bot của nhóm bạn đã hết. Vui lòng reply tin nhắn này và nhập mã key mới, hoặc liên hệ Admin để được hỗ trợ.\nfb: ${(!global.config.FACEBOOK_ADMIN) ? "Exclude Admin if not configured!" : global.config.FACEBOOK_ADMIN}`, event.threadID, (e, i) => {
-                    global.client.handleReply.push({
-                        name: 'rent',
-                        messageID: i.messageID,
-                        threadID: event.threadID,
-                        type: 'RentKey'
-                    });
-                });
-            }
-        }
-
-
         const dateNow = Date.now()
         if (!ADMINBOT.includes(senderID) && MAINTENANCE) {
             return api.sendMessage('⚠️ Bot đang được bảo trì, vui lòng sử dụng sau', threadID, messageID);
