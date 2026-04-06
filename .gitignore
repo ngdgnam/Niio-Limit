@@ -5,3 +5,6 @@ modules/data/checktts/
 modules/commands/Nhóm/data/LOAD_HISTORY_MESSAGES
 Horizon_Database
 FastConfigFca.json
+# Ignore runtime appstate and lockfile
+appstate.json
+package-lock.json

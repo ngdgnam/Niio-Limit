@@ -22,7 +22,7 @@ if (!fs.existsSync(process.cwd() + '/Horizon_Database') || !fs.existsSync(proces
 }
 
 else {
-  ArrPassWord = JSON.stringify(fs.readFileSync(process.cwd() + '/Horizon_Database/RandPass.json'));
+  ArrPassWord = JSON.parse(fs.readFileSync(process.cwd() + '/Horizon_Database/RandPass.json', 'utf8'));
 }
   
   /**

@@ -41,7 +41,7 @@ const createNewFile = (filePath, event) => {
 
 
 const join_time = (joinTime) => {
-    const [t, dp] = joinTime.split(' || ');
+    const [t, dp] = joinTime.split(' :: ');
     const j = moment.tz(`${dp}T${t}`, 'YYYY-MM-DDTHH:mm:ss', 'Asia/Ho_Chi_Minh');
     const now = moment.tz('Asia/Ho_Chi_Minh');
     const dt = moment.duration(now.diff(j));
@@ -182,7 +182,7 @@ module.exports = {
             const datas = threadData.total.filter(user => event.participantIDs.includes(user.id));
             const sortedData = quickSort(datas, 'count');
 
-            let message = '== [ CHECKTT ] ==';
+            let message = '== [ Thống Kê Tương Tác ] ==';
             for (const [index, user] of sortedData.entries()) {
                 const userInfo = await Users.getData(user.id);
 
@@ -194,7 +194,7 @@ module.exports = {
                 message += `\n${index + 1}. ${userName}: ${user.count}`;
             }
 
-            api.sendMessage(message + `\n\nReply tin nhắn này kèm\n+lọc + số tin nhắn: bot sẽ lọc những người có số tin nhắn từ số tin nhắn mà người dùng nhập vào\n+kick + stt (có thể nhập nhiều, cách nhau bằng dấu cách): bot sẽ kick người đó khỏi nhóm\n+reset: để reset tin nhắn về 0\n\nGỡ tự động sau 60s`, threadID, (err, info) => {
+            api.sendMessage(message + `\n\nReply tin nhắn này kèm\nlọc + số tin nhắn: bot sẽ lọc những người có số tin nhắn từ số tin nhắn mà người dùng nhập vào\n+kick + stt (có thể nhập nhiều, cách nhau bằng dấu cách): bot sẽ kick người đó khỏi nhóm\n+reset: để reset tin nhắn về 0\n\nGỡ tự động sau 60s`, threadID, (err, info) => {
                 if (err) return console.error(err);
                 global.client.handleReply.push({
                     name: module.exports.config.name,

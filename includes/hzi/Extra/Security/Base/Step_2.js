@@ -18,5 +18,9 @@ module.exports.Encrypt = function Encrypt(Data) {
  */
 
 module.exports.Decrypt = function Decrypt(Data) {
-    return CryptoJS.enc.Base64.parse(Data).toString(CryptoJS.enc.Utf8);
+    try {
+        return CryptoJS.enc.Base64.parse(String(Data)).toString(CryptoJS.enc.Utf8);
+    } catch (error) {
+        throw new Error("Security Base decryption failed: malformed Base64/UTF-8 data. The encrypted AppState may be corrupted or the stored key is invalid.");
+    }
 };
