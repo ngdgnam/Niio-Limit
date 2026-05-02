@@ -1,8 +1,36 @@
-// process.on('uncaughtException', error => console.error('Unhandled Exception:', error));
-// process.on('unhandledRejection', (reason, promise) => {
-//     if (JSON.stringify(reason).includes("571927962827151")) console.log(`Lỗi khi get dữ liệu mới! khắc phục: hạn chế reset!!`)
-//     else console.error('Unhandled Rejection:', reason)
-// });
+// Global Error Handler
+process.on('uncaughtException', (error) => {
+    console.error('Unhandled Exception:', error);
+    logger('Đã xảy ra lỗi không mong muốn, bot sẽ tắt để tránh crash.', 'error');
+    // Graceful shutdown
+    if (global.client && global.client.api) {
+        global.client.api.logout();
+    }
+    process.exit(1);
+});
+
+process.on('unhandledRejection', (reason, promise) => {
+    if (JSON.stringify(reason).includes("571927962827151")) {
+        console.log(`Lỗi khi get dữ liệu mới! khắc phục: hạn chế reset!!`);
+    } else {
+        console.error('Unhandled Rejection:', reason);
+        logger('Đã xảy ra lỗi promise không được xử lý.', 'error');
+    }
+});
+
+// Graceful shutdown on SIGINT (Ctrl+C)
+process.on('SIGINT', () => {
+    logger('Đang tắt bot một cách an toàn...', 'info');
+    if (global.client && global.client.api) {
+        global.client.api.logout(() => {
+            logger('Đã logout khỏi Facebook.', 'info');
+            process.exit(0);
+        });
+    } else {
+        process.exit(0);
+    }
+});
+
 const moment = require("moment-timezone");
 const fs = require('fs');
 const logger = require("./utils/log");
@@ -13,6 +41,9 @@ const login = require('./includes/hzi');
 const path = require('path');
 const { Controller } = require('./utils/facebook/index');
 const z = ['1a0b0c0', '3d5e4f2', '1g8h1i4', '0j9k9l']
+
+global.messageQueue = [];
+global.isProcessingMessage = false;
 
 global.client = {
     commands: new Map(),
@@ -143,6 +174,33 @@ function onBot({ models }) {
     const initializeBot = (api, models) => {
         api.setOptions(global.config.FCAOption);
         global.client.api = api;
+
+        // Message Queue to avoid spam
+        const originalSendMessage = api.sendMessage.bind(api);
+        api.sendMessage = function() {
+            const args = Array.from(arguments);
+            const message = args[0];
+            const threadID = args[1];
+            const callback = typeof args[2] === 'function' ? args[2] : null;
+            const messageID = typeof args[2] === 'string' ? args[2] : args[3];
+            global.messageQueue.push({ message, threadID, callback, messageID });
+            processMessageQueue(originalSendMessage);
+        };
+
+        function processMessageQueue(originalSendMessage) {
+            if (global.messageQueue.length > 0 && !global.isProcessingMessage) {
+                global.isProcessingMessage = true;
+                const { message, threadID, callback, messageID } = global.messageQueue.shift();
+                originalSendMessage(message, threadID, (err, info) => {
+                    if (callback && typeof callback === 'function') callback(err, info);
+                    setTimeout(() => {
+                        global.isProcessingMessage = false;
+                        processMessageQueue(originalSendMessage);
+                    }, 1000); // 1 second delay between messages
+                }, messageID);
+            }
+        }
+
         logger("┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛", "[ info ]");
         require('./utils/startMDl')(api, models);
         fs.readdirSync(path.join('./modules/onload'))

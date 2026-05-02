@@ -16,6 +16,7 @@
   "license": "GPL-3.0",
   "dependencies": {
     "@distube/ytdl-core": "^4.16.12",
+    "@dongdev/fca-unofficial": "^4.0.3",
     "@google/generative-ai": "^0.17.0",
     "acorn": "^8.10.0",
     "aes-js": "^3.1.2",

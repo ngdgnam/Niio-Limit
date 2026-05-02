@@ -8,3 +8,10 @@ FastConfigFca.json
 # Ignore runtime appstate and lockfile
 appstate.json
 package-lock.json
+# Cache files
+**/cache/
+*.mp4
+*.png
+*.jpg
+*.jpeg
+*.gif

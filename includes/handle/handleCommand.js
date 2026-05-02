@@ -56,6 +56,23 @@ module.exports = function ({ api, models, Users, Threads, Currencies }) {
             }, messageID);
         }
 
+        // Rate Limiting & Anti-Spam
+        const now = Date.now();
+        if (!cooldowns.has(senderID)) {
+            cooldowns.set(senderID, { lastCommand: now, count: 1 });
+        } else {
+            const userCooldown = cooldowns.get(senderID);
+            if (now - userCooldown.lastCommand < 60000) { // 1 minute window
+                userCooldown.count++;
+                if (userCooldown.count > 5) { // max 5 commands per minute
+                    return api.sendMessage('🚫 Bạn đang spam bot! Vui lòng chờ 1 phút trước khi sử dụng lại.', threadID, messageID);
+                }
+            } else {
+                userCooldown.count = 1;
+                userCooldown.lastCommand = now;
+            }
+        }
+
         const [matchedPrefix] = body.match(prefixRegex),
             args = body.slice(matchedPrefix.length).trim().split(/ +/);
         let commandName = args.shift().toLowerCase();
