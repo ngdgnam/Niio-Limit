@@ -1,5 +1,5 @@
 module.exports.config = {
-  name: "listban",
+  name: "listbanadmin",
   version: "1.0.0",
   hasPermssion: 2,
   credits: "ManhG",

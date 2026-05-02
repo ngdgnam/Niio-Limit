@@ -2,9 +2,13 @@ const fs = require('fs-extra');
 const path = require('path');
 const axios = require('axios'); 
 
-const pathData = path.join(__dirname, '../commands/cache/antiavtbox.json');
+const pathData = path.join(__dirname, 'cache', 'antiavtbox.json');
 
 const crFile = (f, i = []) => {
+    const dir = path.dirname(f);
+    if (!fs.existsSync(dir)) {
+        fs.mkdirSync(dir, { recursive: true });
+    }
     if (!fs.existsSync(f)) {
         const data = JSON.stringify(i, null, 2);
         fs.writeFileSync(f, data);

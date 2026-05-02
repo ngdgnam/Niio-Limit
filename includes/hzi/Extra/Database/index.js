@@ -2,16 +2,28 @@
 /* eslint-disable linebreak-style */
 const get = require('lodash/get');
 const set = require('lodash/set');
-const BetterDB = require("better-sqlite3");
 const fs = require('fs-extra');
-const request = require('request');
-const deasync = require('deasync');
+const path = require('path');
 
-if (!fs.existsSync(process.cwd() + '/Horizon_Database')) {
-    fs.mkdirSync(process.cwd() + '/Horizon_Database');
-    fs.writeFileSync(process.cwd() + '/Horizon_Database/A_README.md', 'This folder is used by ChernobyL(NANI =)) ) to store data. Do not delete this folder or any of the files in it.', 'utf8');
+const dbPath = path.join(process.cwd(), 'Horizon_Database', 'SyntheticDatabase.json');
+
+if (!fs.existsSync(path.dirname(dbPath))) {
+    fs.mkdirSync(path.dirname(dbPath));
+    fs.writeFileSync(path.join(path.dirname(dbPath), 'A_README.md'), 'This folder is used by ChernobyL(NANI =)) ) to store data. Do not delete this folder or any of the files in it.', 'utf8');
 }
-var db = new BetterDB(process.cwd() + "/Horizon_Database/SyntheticDatabase.sqlite");
+
+let db = {};
+if (fs.existsSync(dbPath)) {
+    try {
+        db = JSON.parse(fs.readFileSync(dbPath, 'utf8'));
+    } catch (e) {
+        db = {};
+    }
+}
+
+function saveDB() {
+    fs.writeFileSync(dbPath, JSON.stringify(db, null, 2));
+}
 
 function Lset(key, value) {
     if (!key)
@@ -203,208 +215,111 @@ function Replit_List() {
 
 var methods = {
     fetch: function(db, params, options) {
-        let fetched = db.prepare(`SELECT * FROM ${options.table} WHERE ID = (?)`).get(params.id);
-        if (!fetched) return null;
-        try { 
-            fetched = JSON.parse(fetched.json);
-        } catch (e) {
-            fetched = fetched.json;
-        }
+        let fetched = db[params.id];
+        if (fetched === undefined) return null;
         return fetched;
     },
     set: function(db, params, options) {
-        let fetched = db.prepare(`SELECT * FROM ${options.table} WHERE ID = (?)`).get(params.id);
-        if (!fetched) {
-            db.prepare(`INSERT INTO ${options.table} (ID,json) VALUES (?,?)`).run(params.id, '{}');
-            fetched = db.prepare(`SELECT * FROM ${options.table} WHERE ID = (?)`).get(params.id);
+        if (params.ops.target) {
+            if (!db[params.id]) db[params.id] = {};
+            set(db[params.id], params.ops.target, params.data);
+        } else {
+            db[params.id] = params.data;
         }
-        try { 
-            fetched = JSON.parse(fetched); 
-        } catch (e) {
-            fetched = fetched;
-        }
-        if (typeof fetched === 'object' && params.ops.target) {
-            params.data = JSON.parse(params.data);
-            params.data = set(fetched, params.ops.target, params.data);
-        } 
-        else if (params.ops.target) throw new TypeError('Cannot target a non-object.');
-        db.prepare(`UPDATE ${options.table} SET json = (?) WHERE ID = (?)`).run(JSON.stringify(params.data), params.id);
-        let newData = db.prepare(`SELECT * FROM ${options.table} WHERE ID = (?)`).get(params.id).json;
-        if (newData === '{}') return null;
-        else {
-            try { newData = JSON.parse(newData); 
-            } 
-            catch (e) {
-                newData = newData;
-            }
-            return newData;
-        }
+        saveDB();
+        return db[params.id];
     },
     add: function addDB(db, params, options) {
-        let fetched = db.prepare(`SELECT * FROM ${options.table} WHERE ID = (?)`).get(params.id);
-        if (!fetched) {
-            db.prepare(`INSERT INTO ${options.table} (ID,json) VALUES (?,?)`).run(params.id, '{}');
-            fetched = db.prepare(`SELECT * FROM ${options.table} WHERE ID = (?)`).get(params.id); 
-        }
+        if (!db[params.id]) db[params.id] = 0;
         if (params.ops.target) {
-            try { 
-                fetched = JSON.parse(fetched); 
-            }
-            catch (e) {
-                fetched = fetched;
-            }
-            let oldValue = get(fetched, params.ops.target);
+            let oldValue = get(db[params.id], params.ops.target);
             if (oldValue === undefined) oldValue = 0;
-            else if (isNaN(oldValue)) throw new Error(`Data @ ID: "${params.id}" IS NOT A number.\nFOUND: ${fetched}\nEXPECTED: number`);
-            params.data = set(fetched, params.ops.target, oldValue + JSON.parse(params.data));
-        } 
-        else {
-            if (fetched.json === '{}') fetched.json = 0;
-            try { 
-                fetched.json = JSON.parse(fetched); 
-            } catch (e) {
-                fetched.json = fetched.json;
-            }
-            if (isNaN(fetched.json)) throw new Error(`Data @ ID: "${params.id}" IS NOT A number.\nFOUND: ${fetched.json}\nEXPECTED: number`);
-            params.data = parseInt(fetched.json, 10) + parseInt(params.data, 10);
+            else if (isNaN(oldValue)) throw new Error(`Data @ ID: "${params.id}" IS NOT A number.\nFOUND: ${oldValue}\nEXPECTED: number`);
+            set(db[params.id], params.ops.target, oldValue + params.data);
+        } else {
+            if (isNaN(db[params.id])) throw new Error(`Data @ ID: "${params.id}" IS NOT A number.\nFOUND: ${db[params.id]}\nEXPECTED: number`);
+            db[params.id] += params.data;
         }
-        db.prepare(`UPDATE ${options.table} SET json = (?) WHERE ID = (?)`).run(JSON.stringify(params.data), params.id);
-        let newData = db.prepare(`SELECT * FROM ${options.table} WHERE ID = (?)`).get(params.id).json;
-        if (newData === '{}') return null;
-        else {
-            try {  
-                newData = JSON.parse(newData); 
-            } 
-            catch (e) {
-                newData = newData;
-            }
-            return newData;
-        }
+        saveDB();
+        return db[params.id];
     },
     subtract: function subtractDB(db, params, options) {
-       let fetched = db.prepare(`SELECT * FROM ${options.table} WHERE ID = (?)`).get(params.id);
-        if (!fetched) {
-            db.prepare(`INSERT INTO ${options.table} (ID,json) VALUES (?,?)`).run(params.id, '{}');
-            fetched = db.prepare(`SELECT * FROM ${options.table} WHERE ID = (?)`).get(params.id); 
-        }
+        if (!db[params.id]) db[params.id] = 0;
         if (params.ops.target) {
-            try { fetched = JSON.parse(fetched); } catch (e) {}
-            params.data = JSON.parse(params.data);
-            let oldValue = get(fetched, params.ops.target);
+            let oldValue = get(db[params.id], params.ops.target);
             if (oldValue === undefined) oldValue = 0;
             else if (isNaN(oldValue)) throw new Error('Target is not a number.');
-            params.data = set(fetched, params.ops.target, oldValue - params.data);
+            set(db[params.id], params.ops.target, oldValue - params.data);
         } else {
-            if (fetched.json === '{}') fetched.json = 0;
-            else fetched.json = JSON.parse(fetched.json);
-            try { fetched.json = JSON.parse(fetched); } catch (e) {}
-            if (isNaN(fetched.json)) throw new Error('Target is not a number.');
-            params.data = parseInt(fetched.json, 10) - parseInt(params.data, 10);
+            if (isNaN(db[params.id])) throw new Error('Target is not a number.');
+            db[params.id] -= params.data;
         }
-        params.data = JSON.stringify(params.data);
-        db.prepare(`UPDATE ${options.table} SET json = (?) WHERE ID = (?)`).run(params.data, params.id);
-        let newData = db.prepare(`SELECT * FROM ${options.table} WHERE ID = (?)`).get(params.id).json;
-        if (newData === '{}') return null;
-        else {
-            try { newData = JSON.parse(newData); } catch (e) {}
-            return newData;
-        }
+        saveDB();
+        return db[params.id];
     },
     push: function pushDB(db, params, options) {
-        let fetched = db.prepare(`SELECT * FROM ${options.table} WHERE ID = (?)`).get(params.id);
-        if (!fetched) {
-            db.prepare(`INSERT INTO ${options.table} (ID,json) VALUES (?,?)`).run(params.id, '{}');
-            fetched = db.prepare(`SELECT * FROM ${options.table} WHERE ID = (?)`).get(params.id); 
-        }
+        if (!db[params.id]) db[params.id] = [];
         if (params.ops.target) {
-            fetched = JSON.parse(fetched.json);
-        try { fetched = JSON.parse(fetched); } catch (e) {}
-            params.data = JSON.parse(params.data);
-        if (typeof fetched !== 'object') throw new TypeError('Cannot push into a non-object.');
-        let oldArray = get(fetched, params.ops.target);
-        if (oldArray === undefined) oldArray = [];
-        else if (!Array.isArray(oldArray)) throw new TypeError('Target is not an array.');
+            let oldArray = get(db[params.id], params.ops.target);
+            if (oldArray === undefined) oldArray = [];
+            else if (!Array.isArray(oldArray)) throw new TypeError('Target is not an array.');
             oldArray.push(params.data);
-            params.data = set(fetched, params.ops.target, oldArray);
+            set(db[params.id], params.ops.target, oldArray);
         } else {
-        if (fetched.json === '{}') fetched.json = [];
-        else fetched.json = JSON.parse(fetched.json);
-        try { fetched.json = JSON.parse(fetched.json); } catch (e) {}
-            params.data = JSON.parse(params.data);
-        if (!Array.isArray(fetched.json)) throw new TypeError('Target is not an array.');
-            fetched.json.push(params.data);
-            params.data = fetched.json;
+            if (!Array.isArray(db[params.id])) throw new TypeError('Target is not an array.');
+            db[params.id].push(params.data);
         }
-        params.data = JSON.stringify(params.data);
-        db.prepare(`UPDATE ${options.table} SET json = (?) WHERE ID = (?)`).run(params.data, params.id);
-        let newData = db.prepare(`SELECT * FROM ${options.table} WHERE ID = (?)`).get(params.id).json;
-        if (newData === '{}') return null;
-        else {
-            newData = JSON.parse(newData);
-        try { newData = JSON.parse(newData); } catch (e) {}
-        return newData;
-        }
+        saveDB();
+        return db[params.id];
     },
     delete: function deleteDB(db, params, options) {
         const unset = require('lodash/unset');
-        let fetched = db.prepare(`SELECT * FROM ${options.table} WHERE ID = (?)`).get(params.id);
-        if (!fetched) return false;
-        else fetched = JSON.parse(fetched.json);
-        try { fetched = JSON.parse(fetched); } catch (e) {}
-        if (typeof fetched === 'object' && params.ops.target) {
-            unset(fetched, params.ops.target);
-            fetched = JSON.stringify(fetched);
-            db.prepare(`UPDATE ${options.table} SET json = (?) WHERE ID = (?)`).run(fetched, params.id);
-        return true;
+        if (!db[params.id]) return false;
+        if (params.ops.target) {
+            unset(db[params.id], params.ops.target);
+        } else {
+            delete db[params.id];
         }
-        else if (params.ops.target) throw new TypeError('Target is not an object.');
-        else db.prepare(`DELETE FROM ${options.table} WHERE ID = (?)`).run(params.id);
+        saveDB();
         return true;
     },
     has: function hasDB(db, params, options) {
-        let fetched = db.prepare(`SELECT * FROM ${options.table} WHERE ID = (?)`).get(params.id);
-        if (!fetched) return false;
-        else fetched = JSON.parse(fetched.json);
-        try { fetched = JSON.parse(fetched); } catch (e) {}
-        if (params.ops.target) fetched = get(fetched, params.ops.target);
-        return (typeof fetched != 'undefined');
+        if (!db[params.id]) return false;
+        if (params.ops.target) {
+            return get(db[params.id], params.ops.target) !== undefined;
+        }
+        return true;
     },
     all: function allDB(db, params, options) {
-        var stmt = db.prepare(`SELECT * FROM ${options.table} WHERE ID IS NOT NULL`);
         let resp = [];
-        for (var row of stmt.iterate()) {
-            try {
+        for (let key in db) {
             resp.push({
-                ID: row.ID,
-                data: JSON.parse(row.json)
+                ID: key,
+                data: db[key]
             });
-            } 
-            catch (e) {
-                return [];
-            }
         }
         return resp;
     },
     type: function typeDB(db, params, options) {
-        let fetched = db.prepare(`SELECT * FROM ${options.table} WHERE ID = (?)`).get(params.id);
-        if (!fetched) return null; // If empty, return null
-        fetched = JSON.parse(fetched.json);
-        try { fetched = JSON.parse(fetched); } catch (e) {}
-        if (params.ops.target) fetched = get(fetched, params.ops.target); // Get prop using dot notation
-        return typeof fetched;
+        if (!db[params.id]) return null;
+        if (params.ops.target) {
+            return typeof get(db[params.id], params.ops.target);
+        }
+        return typeof db[params.id];
     },
     clear: function clearDB(db, params, options) {
-        let fetched = db.prepare(`DELETE FROM ${options.table}`).run();
-        if(!fetched) return null;
-        return fetched.changes;
-        
+        let count = Object.keys(db).length;
+        for (let key in db) {
+            delete db[key];
+        }
+        saveDB();
+        return count;
     }
 };
 
 
 function arbitrate(method, params) {
     let options = {table: "json"};
-    db.prepare(`CREATE TABLE IF NOT EXISTS ${options.table} (ID TEXT, json TEXT)`).run();
     if (params.ops.target && params.ops.target[0] === ".") params.ops.target = params.ops.target.slice(1); // Remove prefix if necessary
     if (params.data && params.data === Infinity) throw new TypeError(`You cannot set Infinity into the database @ ID: ${params.id}`);
     if (params.id && typeof params.id == "string" && params.id.includes(".")) {

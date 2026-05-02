@@ -1,5 +1,5 @@
 module.exports.config = {
-    name: "kick",
+    name: "kickadmin",
     version: "1.0.0",
     hasPermssion: 1,
     credits: "D-Jukie",

@@ -3,7 +3,7 @@ const fs = require('fs');
 const path = require('path');
 
 module.exports.config = {
-    name: 'menu',
+    name: 'helpmenu',
     version: '1.1.1',
     hasPermssion: 0,
     credits: '',
