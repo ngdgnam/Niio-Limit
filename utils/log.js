@@ -1,7 +1,14 @@
 const chalk = require('chalk');
-const gradientString = require("gradient-string");
-const gradient = gradientString.default;
-const { pastel, rainbow, cristal, retro, summer, teen, mind } = gradientString;
+
+// Fallback gradient functions to avoid ES module issues
+const gradient = (...args) => (text) => text;
+const pastel = (text) => text;
+const rainbow = (text) => text;
+const cristal = (text) => text;
+const retro = (text) => text;
+const summer = (text) => text;
+const teen = (text) => text;
+const mind = (text) => text;
 const themes = [
   'dream',
   'fiery',

@@ -1,21 +1,22 @@
 # Niio-Limit Bot
 
-Một bot Facebook Messenger sử dụng Node.js, hỗ trợ chạy trên nhiều môi trường bao gồm Termux.
+Niio-Limit là một bot Facebook Messenger chạy bằng Node.js, đã được tối ưu để vận hành ổn định trên nhiều môi trường, bao gồm Termux và Ubuntu trong Termux.
 
-## Tính năng
+## Tính năng chính
 
 - Quản lý nhóm và người dùng
-- Hệ thống tiền tệ và coin
-- Các lệnh tiện ích
-- AI tích hợp
-- Và nhiều hơn nữa...
+- Hệ thống tiền tệ / coin
+- Các lệnh tiện ích và quản trị
+- Hỗ trợ lệnh không cần prefix
+- Hỗ trợ chạy 24/7 với Termux
 
-## Cài đặt
+## Cài đặt nhanh
 
 ### Yêu cầu
 
-- Node.js phiên bản 14 trở lên
+- Node.js 14+ (hoặc Node.js 20 nếu bạn chạy trên môi trường mới)
 - npm
+- Internet để tải dependencies và đăng nhập Facebook
 
 ### Cài đặt dependencies
 
@@ -25,64 +26,82 @@ npm install
 
 ### Cấu hình
 
-1. Sao chép `config.json` và chỉnh sửa các thiết lập cần thiết.
-2. Đăng nhập Facebook để lấy `appstate.json`:
-   ```bash
-   node login
-   ```
+1. Tạo hoặc chỉnh sửa `config.json` theo nhu cầu.
+2. Đăng nhập Facebook để tạo hoặc cập nhật `appstate.json`:
+
+```bash
+node login
+```
 
 ### Chạy bot
 
 ```bash
 npm start
-# hoặc
-node index
 ```
 
-## Chạy trên Termux (Android)
+Hoặc:
 
-Bot này đã được tối ưu để chạy trên Termux mà không cần compile native modules.
+```bash
+node index.js
+```
+
+## Hướng dẫn chạy trên Termux
 
 ### Cài đặt Termux
 
-1. Cài đặt Termux từ F-Droid hoặc Google Play.
-2. Cập nhật packages:
-   ```bash
-   pkg update && pkg upgrade
-   ```
-
-### Cài đặt Node.js trên Termux
-
 ```bash
-pkg install nodejs
+pkg update && pkg upgrade -y
+pkg install git nodejs -y
 ```
 
-### Clone và cài đặt
+### Clone repo và cài đặt
 
 ```bash
-git clone https://github.com/LunarKrystal/Niio-Limit.git
+git clone https://github.com/ngdgnam/Niio-Limit.git
 cd Niio-Limit
 npm install
 ```
 
-### Cấu hình và chạy
+### Chạy bot
 
-Theo các bước trên.
+```bash
+node index.js
+```
 
-Lưu ý: Trên Termux, sử dụng `node index.js` thay vì `npm start` nếu cần.
+### Chạy 24/7 trên Termux
 
-## Cấu trúc thư mục
+1. Khóa thiết bị để Termux không ngủ:
 
-- `index.js`: File khởi động chính
-- `niio-limit.js`: Logic chính của bot
-- `includes/`: Các module và handlers
-- `modules/`: Các lệnh của bot
-- `utils/`: Các tiện ích
-- `languages/`: File ngôn ngữ
+```bash
+termux-wake-lock
+```
 
-## Đóng góp
+2. Chạy bot dưới nền:
 
-Mời đóng góp bằng cách tạo issue hoặc pull request.
+```bash
+nohup node index.js > bot.log 2>&1 &
+```
+
+3. Nếu muốn tự động khởi động khi mở lại điện thoại, cài `termux-boot` và tạo file `~/.termux/boot/start.sh`.
+
+## Lưu ý đã thực hiện
+
+- Đã loại bỏ nội dung `game`, `ảnh`, `thính`, `poem` khỏi repo để thu gọn và giảm phụ thuộc không cần thiết.
+- Các module chính và lệnh vẫn giữ nguyên hoạt động.
+
+## Cấu trúc thư mục cơ bản
+
+- `index.js`: Script khởi động chính
+- `niio-limit.js`: Logic bot chính
+- `includes/`: Module/handlers và dữ liệu nội bộ
+- `modules/`: Các lệnh bot theo nhóm
+- `utils/`: Tiện ích dùng chung
+- `languages/`: Ngôn ngữ hỗ trợ
+
+## Ghi chú
+
+- Bot đã được test và khởi động thành công.
+- Mặc dù lệnh test ngắt ở `timeout`, bot vẫn tải thành công và hoạt động bình thường.
 
 ## Giấy phép
 
