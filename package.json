@@ -81,8 +81,5 @@
     "url": "https://github.com/chungdat02/Mirai-V2/issues"
   },
   "homepage": "https://github.com/chungdat02/Mirai-V2#readme",
-  "devDependencies": {
-    "node": "^14.21.3"
-  },
   "keywords": []
 }
