@@ -13,7 +13,9 @@
     "url": "git+https://github.com/chungdat02/Mirai-V2.git"
   },
   "author": "Cao.C.Đạt",
-  "license": "GPL-3.0",
+  "engines": {
+    "node": ">=18.0.0"
+  },
   "dependencies": {
     "@distube/ytdl-core": "^4.16.12",
     "@dongdev/fca-unofficial": "^4.0.3",
@@ -23,7 +25,6 @@
     "ansi-to-html": "^0.7.2",
     "archiver": "^6.0.1",
     "axios": "^1.7.2",
-    "better-sqlite3": "^7.6.2",
     "body-parser": "^1.20.2",
     "cfonts": "^3.3.0",
     "chalk": "^4.1.2",
@@ -32,7 +33,6 @@
     "chess.js": "^1.0.0-beta.6",
     "cors": "^2.8.5",
     "crypto-js": "^4.2.0",
-    "deasync": "^0.1.30",
     "deep-extend": "^0.6.0",
     "dotenv": "^16.4.5",
     "encode32": "^1.1.0",
@@ -61,19 +61,18 @@
     "pastebin-api": "^4.0.1",
     "pidusage": "^3.0.2",
     "pretty-ms": "^7.0.1",
-    "puppeteer": "^19.11.1",
+    "puppeteer": "^24.15.0",
     "request": "^2.88.2",
     "request-promise": "^4.2.6",
     "sequelize": "^6.33.0",
     "simple-youtube-api": "",
-    "sqlite3": "^5.1.6",
     "string-similarity": "",
     "systeminformation": "^5.18.4",
     "tinyurl": "^1.1.7",
     "totp-generator": "0.0.14",
     "translate": "^1.2.3",
     "uniqid": "^5.4.0",
-    "uuid": "^10.0.0",
+    "uuid": "^11.0.0",
     "websocket-stream": "^5.5.2",
     "youtube-search-api": "^1.2.1"
   },
