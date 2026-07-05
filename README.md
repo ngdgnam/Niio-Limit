@@ -1,39 +1,59 @@
 # Niio-Limit Bot
 
-Niio-Limit là một bot Facebook Messenger chạy bằng Node.js, đã được tối ưu để vận hành ổn định trên nhiều môi trường, bao gồm Termux và Ubuntu trong Termux.
+Niio-Limit là một bot Facebook Messenger được phát triển bằng Node.js. Bot hỗ trợ nhiều lệnh nhóm và quản trị, quản lý tiền ảo, xử lý sự kiện, lệnh không cần prefix và hoạt động tốt trên môi trường Linux/Ubuntu, Termux hoặc các máy chủ VPS.
 
-## Tính năng chính
+## Tính năng
 
-- Quản lý nhóm và người dùng
-- Hệ thống tiền tệ / coin
-- Các lệnh tiện ích và quản trị
+- Quản lý nhóm, thành viên và quản trị viên
+- Hệ thống coin / tiền ảo
+- Lệnh tiện ích, tìm kiếm và thống kê
 - Hỗ trợ lệnh không cần prefix
-- Hỗ trợ chạy 24/7 với Termux
+- Hỗ trợ tự động làm sạch cache
+- Khởi động và chạy bot qua `npm start`
 
-## Cài đặt nhanh
+## Yêu cầu
 
-### Yêu cầu
-
-- Node.js 14+ (hoặc Node.js 20 nếu bạn chạy trên môi trường mới)
+- Node.js >= 18
 - npm
 - Internet để tải dependencies và đăng nhập Facebook
+- Facebook appstate (`appstate.json`) hợp lệ
 
-### Cài đặt dependencies
+## Cài đặt
+
+1. Clone repository:
+
+```bash
+git clone https://github.com/ngdgnam/Niio-Limit.git
+cd Niio-Limit
+```
+
+2. Cài dependencies:
 
 ```bash
 npm install
 ```
 
-### Cấu hình
+3. Nếu gặp lỗi thiếu module, cài thêm trực tiếp:
 
-1. Tạo hoặc chỉnh sửa `config.json` theo nhu cầu.
-2. Đăng nhập Facebook để tạo hoặc cập nhật `appstate.json`:
+```bash
+npm install deasync ws
+```
+
+## Cấu hình
+
+1. Mở `config.json` và chỉnh sửa thông tin bot theo nhu cầu:
+   - `PREFIX`: tiền tố lệnh
+   - `ADMINBOT`: danh sách ID admin bot
+   - `NDH`: danh sách hỗ trợ
+   - `FCAOption`: cấu hình FCA
+
+2. Nếu chưa có `appstate.json`, đăng nhập Facebook bằng lệnh:
 
 ```bash
 node login
 ```
 
-### Chạy bot
+## Chạy bot
 
 ```bash
 npm start
@@ -45,64 +65,52 @@ Hoặc:
 node index.js
 ```
 
-## Hướng dẫn chạy trên Termux
+## Cấu hình Termux
 
-### Cài đặt Termux
+1. Cài Termux và nodejs:
 
 ```bash
 pkg update && pkg upgrade -y
 pkg install git nodejs -y
 ```
 
-### Clone repo và cài đặt
+2. Clone repo, cài dependencies và chạy bot:
 
 ```bash
 git clone https://github.com/ngdgnam/Niio-Limit.git
 cd Niio-Limit
 npm install
+npm start
 ```
 
-### Chạy bot
-
-```bash
-node index.js
-```
-
-### Chạy 24/7 trên Termux
-
-1. Khóa thiết bị để Termux không ngủ:
+3. Để chạy nền và giữ hoạt động 24/7:
 
 ```bash
 termux-wake-lock
+nohup npm start > bot.log 2>&1 &
 ```
 
-2. Chạy bot dưới nền:
+## Công việc đã hoàn thành
 
-```bash
-nohup node index.js > bot.log 2>&1 &
-```
+- Đã sửa lỗi crash khi `info.messageID` undefined trong các handler command (`handleCommand.js` và `handleCommandNoprefix.js`).
+- Đã thêm dependency runtime cần thiết vào `package.json`.
+- Đã kiểm tra bot khởi động thành công.
 
-3. Nếu muốn tự động khởi động khi mở lại điện thoại, cài `termux-boot` và tạo file `~/.termux/boot/start.sh`.
+## Cấu trúc chính của dự án
 
-## Lưu ý đã thực hiện
-
-- Đã loại bỏ nội dung `game`, `ảnh`, `thính`, `poem` khỏi repo để thu gọn và giảm phụ thuộc không cần thiết.
-- Các module chính và lệnh vẫn giữ nguyên hoạt động.
-
-## Cấu trúc thư mục cơ bản
-
-- `index.js`: Script khởi động chính
-- `niio-limit.js`: Logic bot chính
-- `includes/`: Module/handlers và dữ liệu nội bộ
-- `modules/`: Các lệnh bot theo nhóm
+- `index.js`: Điểm khởi động chính của bot
+- `niio-limit.js`: Logic nội bộ và cấu hình bot
+- `includes/`: Các module xử lý sự kiện, handler và thư viện phụ
+- `modules/`: Lệnh của bot phân theo nhóm
 - `utils/`: Tiện ích dùng chung
-- `languages/`: Ngôn ngữ hỗ trợ
+- `languages/`: File ngôn ngữ hỗ trợ
 
-## Ghi chú
+## Lưu ý
 
-- Bot đã được test và khởi động thành công.
-- Mặc dù lệnh test ngắt ở `timeout`, bot vẫn tải thành công và hoạt động bình thường.
+- `config.json` chứa token và cấu hình bot, cần giữ bí mật.
+- Không đẩy `appstate.json` lên GitHub nếu nó chứa dữ liệu đăng nhập Facebook.
+- Nếu chạy lên server mới, hãy cài `npm install` trước khi start.
 
-## Giấy phép
+## License
 
 GPL-3.0
