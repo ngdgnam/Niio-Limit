@@ -33,6 +33,7 @@
     "chess.js": "^1.0.0-beta.6",
     "cors": "^2.8.5",
     "crypto-js": "^4.2.0",
+    "deasync": "^0.1.31",
     "deep-extend": "^0.6.0",
     "dotenv": "^16.4.5",
     "encode32": "^1.1.0",
@@ -74,6 +75,7 @@
     "uniqid": "^5.4.0",
     "uuid": "^11.0.0",
     "websocket-stream": "^5.5.2",
+    "ws": "^8.21.0",
     "youtube-search-api": "^1.2.1"
   },
   "bugs": {

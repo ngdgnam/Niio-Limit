@@ -51,6 +51,7 @@ module.exports = function ({ api, models, Users, Threads, Currencies }) {
                 : `⛔ Hiện tại nhóm của bạn đang bị ban\nLý do: ${reason}\nAdmin: ${FACEBOOK_ADMIN}`;
 
             return api.sendMessage(message, threadID, async (err, info) => {
+                if (!info?.messageID) return;
                 await new Promise(resolve => setTimeout(resolve, 5 * 1000));
                 return api.unsendMessage(info.messageID);
             }, messageID);
@@ -107,6 +108,7 @@ module.exports = function ({ api, models, Users, Threads, Currencies }) {
                 return api.sendMessage({
 				body: `👤 ${name} !\n🔎 Lệnh không tồn tại!\n📌 lệnh gần giống là " ${checker.bestMatch.target} "\n📝 Thính: ${randomThinh}\n────────────────────\n⏳ Uptime: ${h}:${p}:${s}\n⏱ ${thu} || ${gio}`
                 }, event.threadID, async (err, info) => {
+					if (!info?.messageID) return;
 					await new Promise(resolve => setTimeout(resolve, 60 * 1000));
 					return api.unsendMessage(info.messageID);
 					}, event.messageID);
@@ -161,11 +163,13 @@ module.exports = function ({ api, models, Users, Threads, Currencies }) {
                     banUsers = commandBanned.get(senderID) || [];
                 if (banThreads.includes(command.config.name))
                     return api.sendMessage(global.getText("handleCommand", "commandThreadBanned", command.config.name), threadID, async (err, info) => {
-                        await new Promise(resolve => setTimeout(resolve, 5 * 1000))
+                        if (!info?.messageID) return;
+                        await new Promise(resolve => setTimeout(resolve, 5 * 1000));
                         return api.unsendMessage(info.messageID);
                     }, messageID);
                 if (banUsers.includes(command.config.name))
                     return api.sendMessage(global.getText("handleCommand", "commandUserBanned", command.config.name), threadID, async (err, info) => {
+                        if (!info?.messageID) return;
                         await new Promise(resolve => setTimeout(resolve, 5 * 1000));
                         return api.unsendMessage(info.messageID);
                     }, messageID);
